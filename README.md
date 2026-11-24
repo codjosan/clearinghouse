@@ -7,7 +7,7 @@ Built purely on the Python standard library with zero external dependencies or n
 ## Project Structure
 
 ```text
-clearinghouse_risk_challenge/
+clearinghouse_risk/
 ├── README.md                  # Project overview, commands, and test instructions
 ├── data/                      # Deterministic synthetic market and event dataset
 │   ├── DATA_DICTIONARY.md     # Schema and field descriptions for dataset files
