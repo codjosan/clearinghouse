@@ -1,0 +1,24 @@
+{
+  "seed": 20261124,
+  "days": 180,
+  "accounts": 120,
+  "instruments": 164,
+  "index_rows": 720,
+  "mark_rows": 29520,
+  "event_rows": 4763,
+  "simulation_only": true,
+  "splits": {
+    "train": [
+      0,
+      89
+    ],
+    "validation": [
+      90,
+      134
+    ],
+    "test": [
+      135,
+      179
+    ]
+  }
+}
