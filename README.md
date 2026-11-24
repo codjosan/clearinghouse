@@ -51,7 +51,7 @@ clearinghouse_risk/
 
 ## Script Commands
 
-Run all commands from the repository root (`clearinghouse_risk_challenge/`):
+Run all commands from the repository root (`clearinghouse_risk/`):
 
 1. **Audit the synthetic dataset** (verifies row counts, unique IDs, mark spreads, and chronological event ordering):
    ```bash

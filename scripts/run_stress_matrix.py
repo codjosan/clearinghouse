@@ -5,26 +5,22 @@ sys.path.insert(0,str(root/'src'))
 from clearinglab.replay import Replay
 from clearinglab.candidate import CandidateClearingEngine
 from clearinglab.scenarios import SCENARIOS
-r=Replay(root/'data')
-from collections import defaultdict
-by_day=defaultdict(list)
-for e in r.events:by_day[int(e['day'])].append(e)
-checkpoints=[10,25,40,55,70,85,100,115,130,145,160,179]
+r=Replay(root/'data',CandidateClearingEngine)
+by_day=r.events_by_day()
+last_day=max(r.market.dates)
+checkpoints=[10,25,40,55,70,85,100,115,130,145,160,last_day]
 rows=[]
-for day in range(180):
-    for e in by_day.get(day,[]):
-        eid=e['event_id'];a=e['account_id'];op=e['operation']
-        if op=='deposit':r.ledger.deposit(eid,day,a,e['amount'])
-        elif op=='fill':r.ledger.apply_fill(eid,day,a,e['instrument_id'],e['quantity'],e['price'],e['fee'])
-        elif op=='funding':r.ledger.funding(eid,day,a,e['instrument_id'],e['rate'],e['price'])
+for day in range(last_day+1):
+    # Shared dispatch: unknown operations raise instead of being silently dropped.
+    for e in by_day.get(day,[]):r.apply_event(e)
     if day not in checkpoints:continue
-    risk=CandidateClearingEngine(r.market)
     for aid,acct in sorted(r.ledger.accounts.items()):
-        report=risk.evaluate(acct,day)
+        report=r.margin.evaluate(acct,day)
         for name,pnl in report.scenario_losses.items():
             rows.append({'day':day,'account':aid,'scenario':name,'pnl':round(pnl,4),
                          'equity':round(report.equity,4),'initial_margin':round(report.initial_margin,4),
                          'breached':int(report.breached)})
+if not rows:raise SystemExit('no stress rows produced: no accounts at any checkpoint')
 out=root/'outputs'/'stress';out.mkdir(parents=True,exist_ok=True)
 with (out/'scenario_account_losses.csv').open('w',newline='') as f:
     w=csv.DictWriter(f,list(rows[0]));w.writeheader();w.writerows(rows)
