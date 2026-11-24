@@ -50,6 +50,13 @@ class MarketTests(unittest.TestCase):
     def test_overleveraged_account_breached(self):
         a=Account('a',D('100'),{'BTC-PERP':Position('BTC-PERP',D('50'),D(self.m.mark(20,'BTC-PERP')['mid']))})
         self.assertTrue(self.r.evaluate(a,20).breached)
+    def test_perp_unshocked_scenario_has_no_pnl(self):
+        # vol_crush has no spot move and no liquidity haircut, so a perp-only book is flat.
+        a=Account('a',D('20000'),{'BTC-PERP':Position('BTC-PERP',D('10'),D(self.m.mark(10,'BTC-PERP')['mid']))})
+        self.assertEqual(self.r.evaluate(a,10).scenario_losses['vol_crush'],0)
+    def test_perp_shock_scales_own_mark(self):
+        inst=self.m.instruments['BTC-PERP'];crash=next(s for s in SCENARIOS if s.name=='crypto_crash_30')
+        self.assertAlmostEqual(self.r._repriced(inst,10,crash),self.m.mark(10,'BTC-PERP')['mid']*0.70)
     def test_empty_account_not_breached(self):
         self.assertFalse(self.r.evaluate(Account('a',D('1')),0).breached)
     def test_candidate_interfaces_present(self):self.assertEqual(require_methods(CandidateClearingEngine),[])

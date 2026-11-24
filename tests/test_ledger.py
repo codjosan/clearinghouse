@@ -80,6 +80,12 @@ class LedgerTests(unittest.TestCase):
     def test_unknown_replay_event_not_allowed(self):
         self.l.events.append({'op':'unknown','id':'bad'})
         with self.assertRaises(Exception):self.l.replay()
+    def test_realized_pnl_matches_posted_cash(self):
+        # Sub-quantum products must not leave position PnL and the cash journal out of step.
+        self.l.apply_fill('f1',0,'a','BTC-PERP','0.333','100.123457')
+        self.l.apply_fill('f2',1,'a','BTC-PERP','-0.333','101.987653')
+        posted=sum(D(c['amount']) for c in self.l.cash_book if c['reason']=='realized_pnl')
+        self.assertEqual(self.l.accounts['a'].positions['BTC-PERP'].realized_pnl,posted)
     def test_atomic_balance_for_all_postings(self):
         self.l.apply_fill('f1',0,'a','BTC-PERP',1,100,4)
         self.l.withdraw('w1',0,'a',250)

@@ -21,7 +21,7 @@ def generate(out,seed=20261124,days=180,accounts=120):
                     inst.append(dict(instrument_id=f'{sym}-{expiry}-{int(m*100)}-{kind}',underlying=sym,kind=kind,
                                      strike=round(UNDERLYINGS[sym]*m,2),expiry_day=expiry,multiplier=1,tick_size=.01))
     emit(out/'instruments.csv',list(inst[0]),inst)
-    index=[];marks=[];price=dict(UNDERLYINGS)
+    index=[];marks=[];price=dict(UNDERLYINGS);spot_path={}
     from math import erf,exp,log,sqrt
     def n(x):return .5*(1+erf(x/sqrt(2)))
     def bs(s,k,t,v,c):
@@ -35,6 +35,7 @@ def generate(out,seed=20261124,days=180,accounts=120):
         for sym in UNDERLYINGS:
             vol={'BTC':.038,'ETH':.051,'SOL':.075,'AVAX':.09}[sym]
             price[sym]*=max(.5,1+market*.7+rng.gauss(0,vol))
+            spot_path[(day,sym)]=price[sym]
             index.append(dict(day=day,underlying=sym,index_price=f'{price[sym]:.8f}',source='consolidated'))
         for row in inst:
             sym=row['underlying'];s=price[sym]
@@ -72,17 +73,19 @@ def generate(out,seed=20261124,days=180,accounts=120):
             seq+=1;events.append(dict(event_id=f'EV{seq:08d}',day=day,account_id=name,
                                    operation='fill',instrument_id=iid,quantity=qty,price=f'{px:.6f}',amount='',fee=fee,rate='0'))
         if day%7==0:
+            # Funding settles against that day's index. (`price` holds the final-day
+            # path once the market loop has finished, which would leak future prices.)
             for _ in range(24):
                 name=rng.choice(account_names);sym=rng.choice(list(UNDERLYINGS))
                 seq+=1;events.append(dict(event_id=f'EV{seq:08d}',day=day,account_id=name,
                                        operation='funding',instrument_id=f'{sym}-PERP',quantity='',
-                                       price=f'{price[sym]:.6f}',amount='',fee='0',rate=f'{rng.gauss(.00008,.00014):.8f}'))
+                                       price=f'{spot_path[(day,sym)]:.6f}',amount='',fee='0',rate=f'{rng.gauss(.00008,.00014):.8f}'))
     events.sort(key=lambda e:(int(e['day']),int(e['event_id'][2:])))
     emit(out/'events.csv',list(events[0]),events)
     meta={'seed':seed,'days':days,'accounts':accounts,'instruments':len(inst),'index_rows':len(index),
           'mark_rows':len(marks),'event_rows':len(events),'simulation_only':True,
           'splits':{'train':[0,89],'validation':[90,134],'test':[135,179]}}
-    (out/'manifest.json').write_text(json.dumps(meta,indent=2))
+    (out/'manifest.json').write_text(json.dumps(meta,indent=2),newline='\n')
     print(json.dumps(meta,indent=2))
 
 if __name__=='__main__':

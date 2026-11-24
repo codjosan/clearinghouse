@@ -2,10 +2,11 @@
 
 The candidate should extend this to complete novation, settlement, fees, and insurance.
 """
-from copy import deepcopy
-from decimal import Decimal
 from .types import Account,Position,D
 import hashlib,json
+
+# Fixed settlement precision prevents long replay trails of sub-cent dust.
+CASH_QUANTUM=D('0.00000001')
 
 class Ledger:
     def __init__(self, instruments):
@@ -26,8 +27,7 @@ class Ledger:
         return True
 
     def _cash(self,event_id,day,account_id,amount,counterparty,reason):
-        # Fixed settlement precision prevents long replay trails of sub-cent dust.
-        amount=D(amount).quantize(D('0.00000001'))
+        amount=D(amount).quantize(CASH_QUANTUM)
         account=self.ensure(account_id)
         account.cash+=amount
         self.system_accounts[counterparty]=self.system_accounts.get(counterparty,D('0'))-amount
@@ -65,6 +65,8 @@ class Ledger:
         # Only realize on closing quantity; reversing resets the cost basis.
         close_qty=min(abs(old),abs(quantity)) if old*quantity<0 else D('0')
         realized=close_qty*(price-pos.average_entry)*(D('1') if old>0 else D('-1'))*multiplier
+        # Quantize once so the position's realized PnL matches the cash actually posted.
+        realized=realized.quantize(CASH_QUANTUM)
         if close_qty:
             self._cash(event_id,day,account_id,realized,'external','realized_pnl')
             pos.realized_pnl+=realized

@@ -7,7 +7,7 @@ Built purely on the Python standard library with zero external dependencies or n
 ## Project Structure
 
 ```text
-clearinghouse_risk_challenge/
+clearinghouse_risk/
 ├── README.md                  # Project overview, commands, and test instructions
 ├── data/                      # Deterministic synthetic market and event dataset
 │   ├── DATA_DICTIONARY.md     # Schema and field descriptions for dataset files
@@ -51,7 +51,7 @@ clearinghouse_risk_challenge/
 
 ## Script Commands
 
-Run all commands from the repository root (`clearinghouse_risk_challenge/`):
+Run all commands from the repository root (`clearinghouse_risk/`):
 
 1. **Audit the synthetic dataset** (verifies row counts, unique IDs, mark spreads, and chronological event ordering):
    ```bash
